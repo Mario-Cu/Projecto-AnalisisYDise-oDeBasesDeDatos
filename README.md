@@ -4,7 +4,7 @@ Practica: Ordenanza sobre Obras e instalaciones de servicios en el dominio públ
 
 ## Documento Web
 
-* [Doc](/https://docs.google.com/document/d/1YkHaxVfbGTERngw__7j5nMzlCb7LLLG_/edit?usp=sharing&ouid=118304833978674777203&rtpof=true&sd=true) - Documento compartido utilizado
+* [Doc](https://docs.google.com/document/d/1YkHaxVfbGTERngw__7j5nMzlCb7LLLG_/edit?usp=sharing&ouid=118304833978674777203&rtpof=true&sd=true) - Documento compartido utilizado
 
 
 ## Autores
