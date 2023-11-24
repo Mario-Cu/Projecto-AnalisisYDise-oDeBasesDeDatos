@@ -41,22 +41,22 @@ CREATE TABLE LICENCIA_DECONEXION
 
 CREATE TABLE LICENCIA_DEOCUPACION
 (
-    idLicencia integer NOT NULL,
+    idLicenciaOcupacion integer NOT NULL,
     caracter varchar NOT NULL,
     dominioComprendido varchar NOT NULL,
-    PRIMARY KEY (idLicencia),
-    FOREIGN KEY (idLicencia)
+    PRIMARY KEY (idLicenciaOcupacion),
+    FOREIGN KEY (idLicenciaOcupacion)
         REFERENCES LICENCIA
 );
 
 CREATE TABLE LICENCIA_DEOBRA
 (
-    idLicencia integer NOT NULL,
+    idLicenciaObra integer NOT NULL,
     claseLicenciaObras varchar NOT NULL,
     plazoInic Date NOT NULL,
     plazoFin Date NOT NULL,
-    PRIMARY KEY (idLicencia),
-    FOREIGN KEY (idLicencia)
+    PRIMARY KEY (idLicenciaObra),
+    FOREIGN KEY (idLicenciaObra)
         REFERENCES LICENCIA
 );
 
@@ -83,24 +83,24 @@ CREATE TABLE PROYECTO(
     cifEmpresaExplotadora varchar NOT NULL,
     PRIMARY KEY (idLicenciaObra, fechaSolicitud),
     FOREIGN KEY (idLicenciaObra) 
-        REFERENCES LICENCIA_DEOBRA (idLicencia), 
+        REFERENCES LICENCIA_DEOBRA (idLicenciaObra), 
     FOREIGN KEY (cifEmpresaExplotadora) 
         REFERENCES PLAN (cifEmpresaExplotadora) 
 );
 
 
-CREATE TABLE OBRA(
+CREATE TABLE OBRA
+(
     idLicenciaOcupacion integer NOT NULL,
     idLicenciaObra integer NOT NULL,
-    fechaInic Date NOT NULL,
-    fechaFin Date NOT NULL,
-    tecnicoResponsable varchar NOT NULL,
+    -- Otros campos específicos de la tabla "Obra"
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra),
     FOREIGN KEY (idLicenciaOcupacion)
-        REFERENCES LICENCIA_DEOCUPACION (idLicencia), 
+        REFERENCES LICENCIA_DEOCUPACION(idLicenciaOcupacion),
     FOREIGN KEY (idLicenciaObra)
-        REFERENCES LICENCIA_DEOBRA (idLicencia) 
+        REFERENCES LICENCIA_DEOBRA(idLicenciaObra)
 );
+
 
 
 CREATE TABLE DEPOSITO(
@@ -109,34 +109,31 @@ CREATE TABLE DEPOSITO(
     fechaCreacion Date NOT NULL,
     costeReposicion float NOT NULL,
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra, fechaCreacion),
-    FOREIGN KEY (idLicenciaOcupacion)
-    REFERENCES OBRA (idLicenciaOcupacion), 
-    FOREIGN KEY (idLicenciaObra)
-    REFERENCES OBRA (idLicenciaObra) 
+    FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra)
+        REFERENCES OBRA(idLicenciaOcupacion, idLicenciaObra)
 );
-
 
 CREATE TABLE INSPECCION(
     idLicenciaOcupacion integer NOT NULL,
     idLicenciaObra integer NOT NULL,
     idInspeccion integer NOT NULL,
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra, idInspeccion),
-    FOREIGN KEY (idLicenciaOcupacion)
-        REFERENCES OBRA (idLicenciaOcupacion), 
-    FOREIGN KEY (idLicenciaObra)
-        REFERENCES OBRA (idLicenciaObra) 
+    FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra)
+        REFERENCES OBRA(idLicenciaOcupacion, idLicenciaObra)
 );
 
 
-CREATE TABLE MULTA(
+CREATE TABLE MULTA (
+    idLicenciaOcupacion integer NOT NULL,
+    idLicenciaObra integer NOT NULL,
     idInspeccion integer NOT NULL,
     idMulta integer NOT NULL,
-    tipoInfraccion varchar NOT NULL,
-    importe float NOT NULL,
-    PRIMARY KEY (idInspeccion, idMulta),
-    FOREIGN KEY (idInspeccion)
-        REFERENCES INSPECCION (idInspeccion) 
+    -- Otros campos específicos de la tabla "Multa"
+    PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra, idInspeccion, idMulta),
+    FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra, idInspeccion)
+        REFERENCES INSPECCION
 );
+
 
 
 CREATE TABLE CONDUCCION
