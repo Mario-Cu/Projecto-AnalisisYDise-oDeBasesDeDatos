@@ -154,8 +154,8 @@ CREATE TABLE OBRA_CONDUCCION
 (
     idLicenciaOcupacion integer NOT NULL,
     idLicenciaObra integer NOT NULL,
-    iteracion integer NOT NULL,
-    caracteristicas text NOT NULL,
+    iteracion SERIAL,
+    caracteristicas text,
     temporal bit NOT NULL,
 
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra,iteracion),
@@ -168,8 +168,8 @@ CREATE TABLE OBRA_MEDIO
 (
     idLicenciaOcupacion integer NOT NULL,
     idLicenciaObra integer NOT NULL,
-    iteracion integer NOT NULL,
-    caracteristicas text NOT NULL,
+    iteracion SERIAL,
+    caracteristicas text,
     temporal bit NOT NULL,
 
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra,iteracion),
@@ -234,9 +234,9 @@ CREATE TABLE CONDUCCION
     profundidad float NOT NULL,
     proteccionEspecial bit NOT NULL,
     altura float NOT NULL,
-    idLicenciaOcupacion integer NOT NULL,
-    idLicenciaObra integer NOT NULL,
-    iteracion integer NOT NULL,
+    idLicenciaOcupacion integer,
+    idLicenciaObra integer,
+    iteracion integer,
     PRIMARY KEY (ubicacion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra, iteracion)
         REFERENCES OBRA_CONDUCCION(idLicenciaOcupacion, idLicenciaObra, iteracion)
@@ -267,9 +267,9 @@ CREATE TABLE MEDIO
 (
     ubicacion varchar  NOT NULL,
     tipo varchar  NOT NULL,
-    idLicenciaOcupacion integer NOT NULL,
-    idLicenciaObra integer NOT NULL,
-    iteracion integer NOT NULL,
+    idLicenciaOcupacion integer,
+    idLicenciaObra integer,
+    iteracion integer,
     PRIMARY KEY (ubicacion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra, iteracion)
         REFERENCES OBRA_MEDIO(idLicenciaOcupacion, idLicenciaObra, iteracion)
@@ -393,6 +393,20 @@ VALUES
 ((SELECT idLicenciaOcupacion FROM LICENCIA_DEOCUPACION WHERE idLicenciaOcupacion = '123'), (SELECT idLicenciaObra FROM LICENCIA_DEOBRA WHERE idLicenciaObra = '789'), '2023-02-01', '2023-12-31', 'TecnicoResponsable1', '2023-12-31', 'SeñalamientoFecha1'),
 ((SELECT idLicenciaOcupacion FROM LICENCIA_DEOCUPACION WHERE idLicenciaOcupacion = '456'), (SELECT idLicenciaObra FROM LICENCIA_DEOBRA WHERE idLicenciaObra = '1234'), '2023-02-01', '2023-12-31', 'TecnicoResponsable1', '2023-12-31', 'SeñalamientoFecha2');
 
+-- Poblado de la tabla OBRA_CONDUCCION
+INSERT INTO OBRA_CONDUCCION (idLicenciaOcupacion, idLicenciaObra, caracteristicas, temporal)
+VALUES
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = 123), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaObra = 789), 'Caracteristicas1', '0'),
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = 123), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaObra = 789), 'Caracteristicas2', '0'),
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = 123), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaObra = 789), 'Caracteristicas3', '0');
+
+-- Poblado de la tabla OBRA_MEDIO
+INSERT INTO OBRA_MEDIO (idLicenciaOcupacion, idLicenciaObra, caracteristicas, temporal)
+VALUES
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = 456), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaObra = 1234), 'Caracteristicas1', '0'),
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = 456), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaObra = 1234), 'Caracteristicas2', '0'),
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = 456), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaObra = 1234), NULL, '0');
+
 -- Poblado de la tabla DEPOSITO referente a OBRA
 INSERT INTO DEPOSITO (idLicenciaOcupacion, idLicenciaObra, fechaCreacion, peticionario, costeReposicion, dañosYPerjuiciosOcasionados, gastosPorDesviarTrafico, plazoGarantia)
 VALUES
@@ -418,57 +432,55 @@ VALUES
 
 
 -- Poblado de la tabla CONDUCCION
-INSERT INTO CONDUCCION (ubicacion, dominioComprendido, enterrada, profundidadLibre, tipo, profundidad, proteccionEspecial, altura)
+INSERT INTO CONDUCCION (ubicacion, dominioComprendido, enterrada, profundidadLibre, tipo, profundidad, proteccionEspecial, altura, idLicenciaOcupacion, idLicenciaObra, iteracion)
 VALUES
-('Ubicacion1', 'DominioComprendido1', '1', 10.0, 'Tipo1', 5.0, '1', 2.5),
-('Ubicacion2', 'DominioComprendido2', '0', 15.0, 'Tipo2', 7.0, '0', 3.0),
-('Ubicacion3', 'DominioComprendido3', '1', 12.0, 'Tipo3', 6.0, '1', 2.8);
+('Plaza1-Plaza2', 'Subsuelo', '1', 10.0, 'Electricidad', 12.0, '1', 0,(SELECT idLicenciaOcupacion FROM OBRA_CONDUCCION WHERE  iteracion = 3), (SELECT idLicenciaObra FROM OBRA_CONDUCCION WHERE  iteracion = 3), (SELECT iteracion FROM OBRA_CONDUCCION WHERE iteracion = 3)),
+('Plaza1-Plaza3', 'Suelo', '0', 0, 'Electricidad', 0.0, '0', 0, NULL, NULL, NULL),
+('Plaza3-Calle1', 'Subsuelo', '1', 12.0, 'Agua', 15.0, '1', 0, NULL, NULL, NULL);
 
 -- Poblado de la tabla CONDUCCION_ELECTRICA
 INSERT INTO CONDUCCION_ELECTRICA (ubicacion, energiaTransportada)
 VALUES
-('Ubicacion1', 500.0);
+((SELECT ubicacion FROM CONDUCCION WHERE ubicacion = 'Plaza1-Plaza2'), 450.0),
+((SELECT ubicacion FROM CONDUCCION WHERE ubicacion = 'Plaza1-Plaza3'), 500.0);
 
 -- Poblado de la tabla DISTANCIA
 INSERT INTO DISTANCIA (idConduccion1, idConduccion2, distancia, paralela)
 VALUES
-('Ubicacion1', 'Ubicacion2', 20.0, '1'),
-('Ubicacion2', 'Ubicacion3', 15.0, '0');
+((SELECT ubicacion FROM CONDUCCION WHERE ubicacion = 'Plaza1-Plaza2'), (SELECT ubicacion FROM CONDUCCION WHERE ubicacion = 'Plaza1-Plaza3'), 20.0, '1');
 
 -- Poblado de la tabla MEDIO
-INSERT INTO MEDIO (ubicacion, tipo)
+INSERT INTO MEDIO (ubicacion, tipo,idLicenciaOcupacion, idLicenciaObra, iteracion)
 VALUES
-('UbicacionMedio1', 'TipoMedio1'),
-('UbicacionMedio2', 'TipoMedio2'),
-('UbicacionMedio3', 'TipoMedio3');
+('Plaza1-Plaza2', 'Tubular',NULL,NULL,NULL),
+('Plaza1-Plaza3', 'Galeria',NULL,NULL,NULL);
 
 -- Poblado de la tabla RELACION
-INSERT INTO RELACION (idInstalacion, idConduccion, idMedio)
+INSERT INTO RELACION (idInstalacion, idConduccion, idMedio, codRelacion)
 VALUES
-('CodConducciones1', 'Ubicacion1', 'UbicacionMedio1'),
-('CodConducciones2', 'Ubicacion2', 'UbicacionMedio2'),
-('CodConducciones3', 'Ubicacion3', 'UbicacionMedio3');
+((SELECT idCodConducciones FROM INSTALACION WHERE idCodConducciones = 'Plaza1-Plaza2-Plaza2-Plaza3-Plaza3-Calle1'), (SELECT ubicacion FROM CONDUCCION WHERE ubicacion = 'Plaza1-Plaza2'), (SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza2'), 'Relacion-Plaza1-Plaza2-InstalacionPlaza1-Calle1'),
+((SELECT idCodConducciones FROM INSTALACION WHERE idCodConducciones = 'Plaza1-Plaza2-Plaza2-Plaza3-Plaza3-Calle1'), (SELECT ubicacion FROM CONDUCCION WHERE ubicacion = 'Plaza1-Plaza3'), (SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza3'), 'Relacion-Plaza1-Plaza3-InstalacionPlaza1-Calle1');
 
 -- Poblado de la tabla GALERIASERVICIOS con respecto al MEDIO1
 INSERT INTO GALERIASERVICIOS (ubicacion, visitable, altaTension, dimensiones)
 VALUES
-('UbicacionMedio1', '1', '0', 'DimensionesGaleria1');
+((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza3'), '1', '0', '100x50x50');
 
 -- Poblado de la tabla ACCESO relacionado a la GALERIASERVICIOS
 INSERT INTO ACCESO (ubicacionGaleria, ubicacionAcceso, tipo)
 VALUES
-('UbicacionMedio1', 'UbicacionAcceso1', 'TipoAcceso1'),
-('UbicacionMedio1', 'UbicacionAcceso2', 'TipoAcceso2'),
-('UbicacionMedio1', 'UbicacionAcceso3', 'TipoAcceso3');
+((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza3'), 'acceso515Plaza', 'Personal'),
+((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza3'), 'accesoLateral41Plaza', 'Personal'),
+((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza3'), 'acceso245Plaza' , 'Materiales');
 
 -- Poblado de la tabla PLANMANTENIMIENTO relacionado a la GALERIASERVICIOS
 INSERT INTO PLANMANTENIMIENTO (ubicacion, cifEmpresaUsuaria, operaciones, rutinas, controles)
 VALUES
-('UbicacionMedio1', 'CIFEmpresaUsuaria1', 'Operaciones1', 'Rutinas1', 'Controles1');
+((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza3'), 'G48524045', 'Operaciones requeridas por la empresa...', 'Rutinas a seguir por la empresa...', 'Controles requeridos....');
 
 -- Poblado de la tabla TUBULAR para los dos últimos medios
 INSERT INTO TUBULAR (ubicacion, tipoTubular, anchura, dimensiones)
 VALUES
-('UbicacionMedio2', 'TipoTubular1', 2.0, 'DimensionesTubular1'),
-('UbicacionMedio3', 'TipoTubular2', 1.5, 'DimensionesTubular2');
+((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza2'), 'Multitubular', 2.0, '20x20x20');
+
 
