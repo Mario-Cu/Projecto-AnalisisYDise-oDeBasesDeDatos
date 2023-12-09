@@ -50,6 +50,7 @@ CREATE TABLE LICENCIA_DEOCUPACION
     PRIMARY KEY (idLicenciaOcupacion),
     FOREIGN KEY (idLicenciaOcupacion)
         REFERENCES LICENCIA
+        ON DELETE CASCADE
 );
 
 CREATE TABLE LICENCIA_DEOBRA
@@ -68,6 +69,9 @@ CREATE TABLE LICENCIA_DEOBRA
     PRIMARY KEY (idLicenciaObra),
     FOREIGN KEY (idLicenciaObra)
         REFERENCES LICENCIA
+        ON DELETE CASCADE,
+    CONSTRAINT fechasInconsistentes CHECK (plazoInic < plazoFin),
+    CONSTRAINT fechasInicPreviaAFechaActual CHECK (plazoInic >= CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE LICENCIA_DECONEXION
@@ -85,6 +89,7 @@ CREATE TABLE LICENCIA_DECONEXION
     PRIMARY KEY (idLicencia),
     FOREIGN KEY (idLicencia)
         REFERENCES LICENCIA_DEOBRA
+        ON DELETE CASCADE
 );
 
 
@@ -128,9 +133,14 @@ CREATE TABLE PROYECTO(
 
     PRIMARY KEY (idLicenciaObra, fechaSolicitud),
     FOREIGN KEY (idLicenciaObra) 
-        REFERENCES LICENCIA_DEOBRA (idLicenciaObra), 
+        REFERENCES LICENCIA_DEOBRA (idLicenciaObra)
+        ON DELETE CASCADE, 
     FOREIGN KEY (cifEmpresaExplotadora) 
         REFERENCES PLAN (cifEmpresaExplotadora) 
+        ON DELETE NO ACTION,
+    CONSTRAINT fechasInconsistentes CHECK (fechaSolicitud < fechaFinPrevisibleObra),
+    CONSTRAINT fechaSolicitudPreviaAFechaActual CHECK (fechaSolicitud >= CURRENT_TIMESTAMP),
+    CONSTRAINT presupuestoNegativo CHECK (presupuesto >= 0)
 );
 
 
@@ -145,9 +155,13 @@ CREATE TABLE OBRA
     señalamientoFecha varchar NOT NULL,
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra),
     FOREIGN KEY (idLicenciaOcupacion)
-        REFERENCES LICENCIA_DEOCUPACION(idLicenciaOcupacion),
+        REFERENCES LICENCIA_DEOCUPACION(idLicenciaOcupacion)
+        ON DELETE CASCADE,
     FOREIGN KEY (idLicenciaObra)
         REFERENCES LICENCIA_DEOBRA(idLicenciaObra)
+        ON DELETE CASCADE,
+    CONSTRAINT fechasInconsistentes CHECK (fechaInic < fechaFin),
+    CONSTRAINT fechasInicPreviaAFechaActual CHECK (fechaInic >= CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE OBRA_CONDUCCION
@@ -161,6 +175,7 @@ CREATE TABLE OBRA_CONDUCCION
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra,iteracion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra)
         REFERENCES OBRA(idLicenciaOcupacion, idLicenciaObra)
+        ON DELETE CASCADE
 );
 
 
@@ -175,8 +190,7 @@ CREATE TABLE OBRA_MEDIO
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra,iteracion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra)
         REFERENCES OBRA(idLicenciaOcupacion, idLicenciaObra)
-
-
+        ON DELETE CASCADE
 );
 
 
@@ -192,6 +206,10 @@ CREATE TABLE DEPOSITO(
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra, fechaCreacion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra)
         REFERENCES OBRA(idLicenciaOcupacion, idLicenciaObra)
+            ON DELETE CASCADE,
+    CONSTRAINT fechasInconsistentes CHECK (plazoGarantia >= fechaCreacion),
+    CONSTRAINT fechasCreacionPreviaAFechaActual CHECK (fechaCreacion >= CURRENT_TIMESTAMP),
+    CONSTRAINT costeNegativo CHECK (costeReposicion >= 0)
 );
 
 CREATE TABLE INSPECCION(
@@ -207,6 +225,7 @@ CREATE TABLE INSPECCION(
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra, idInspeccion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra)
         REFERENCES OBRA(idLicenciaOcupacion, idLicenciaObra)
+          ON DELETE CASCADE
 );
 
 
@@ -220,6 +239,7 @@ CREATE TABLE MULTA (
     PRIMARY KEY (idLicenciaOcupacion, idLicenciaObra, idInspeccion, idMulta),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra, idInspeccion)
         REFERENCES INSPECCION
+            ON DELETE CASCADE
 );
 
 
@@ -240,13 +260,23 @@ CREATE TABLE CONDUCCION
     PRIMARY KEY (ubicacion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra, iteracion)
         REFERENCES OBRA_CONDUCCION(idLicenciaOcupacion, idLicenciaObra, iteracion)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT profundidadLibreNeg CHECK (profundidadLibre >= 0),
+    CONSTRAINT profundidadNeg CHECK (profundidad >= 0),
+    CONSTRAINT alturaNeg CHECK (altura >= 0)
+
 );
 
 CREATE TABLE CONDUCCION_ELECTRICA
 (
     ubicacion varchar  NOT NULL,
     energiaTransportada float NOT NULL,
-    PRIMARY KEY (ubicacion)
+    PRIMARY KEY (ubicacion),
+    FOREIGN KEY (ubicacion)
+        REFERENCES CONDUCCION
+         ON DELETE CASCADE,
+    CONSTRAINT energNegativa CHECK (energiaTransportada >= 0)
 );
 
 CREATE TABLE DISTANCIA
@@ -257,9 +287,13 @@ CREATE TABLE DISTANCIA
     paralela bit NOT NULL,
     PRIMARY KEY (idConduccion1, idConduccion2),
     FOREIGN KEY(idConduccion1) 
-        REFERENCES CONDUCCION,
+        REFERENCES CONDUCCION
+        ON DELETE CASCADE,
     FOREIGN KEY(idConduccion2)
         REFERENCES CONDUCCION
+        ON DELETE CASCADE,
+    CONSTRAINT distanciaNeg CHECK (distancia >= 0),
+    CONSTRAINT distanciaParalelaInconsistente CHECK (distancia >= 0.8 AND paralela='1')
 );
 
 
@@ -273,6 +307,8 @@ CREATE TABLE MEDIO
     PRIMARY KEY (ubicacion),
     FOREIGN KEY (idLicenciaOcupacion, idLicenciaObra, iteracion)
         REFERENCES OBRA_MEDIO(idLicenciaOcupacion, idLicenciaObra, iteracion)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 
 );
 
@@ -284,11 +320,14 @@ CREATE TABLE RELACION
     codRelacion varchar NOT NULL,
     PRIMARY KEY (idInstalacion,idConduccion,idMedio,codRelacion),
     FOREIGN KEY (idInstalacion)
-        REFERENCES INSTALACION,
+        REFERENCES INSTALACION
+        ON DELETE CASCADE,
     FOREIGN KEY (idConduccion)
-        REFERENCES CONDUCCION,
+        REFERENCES CONDUCCION
+        ON DELETE CASCADE,
     FOREIGN KEY (idMedio)
         REFERENCES MEDIO
+        ON DELETE CASCADE
 );
 
 CREATE TABLE GALERIASERVICIOS
@@ -300,6 +339,7 @@ CREATE TABLE GALERIASERVICIOS
     PRIMARY KEY (ubicacion),
     FOREIGN KEY (ubicacion)
         REFERENCES MEDIO
+        ON DELETE CASCADE
 );
 
 CREATE TABLE ACCESO
@@ -310,6 +350,7 @@ CREATE TABLE ACCESO
     PRIMARY KEY (ubicacionGaleria, ubicacionAcceso),
     FOREIGN KEY (ubicacionGaleria)
         REFERENCES GALERIASERVICIOS
+        ON DELETE CASCADE
 );
 
 CREATE TABLE PLANMANTENIMIENTO
@@ -322,6 +363,7 @@ CREATE TABLE PLANMANTENIMIENTO
     PRIMARY KEY (ubicacion, cifEmpresaUsuaria),
     FOREIGN KEY (ubicacion)
         REFERENCES GALERIASERVICIOS
+        ON DELETE CASCADE
 );
 
 CREATE TABLE TUBULAR
@@ -333,6 +375,8 @@ CREATE TABLE TUBULAR
     PRIMARY KEY (ubicacion),
     FOREIGN KEY (ubicacion)
         REFERENCES MEDIO
+        ON DELETE CASCADE,
+    CONSTRAINT anchuraNeg CHECK (anchura >= 0)
 );
 
 ------------------POBLADO DE TABLAS ------------------------
@@ -355,9 +399,9 @@ VALUES
 -- Poblado de la tabla LICENCIA_DEOBRA
 INSERT INTO LICENCIA_DEOBRA (idLicenciaObra, claseLicenciaObras, plazoInic, plazoFin, porcionVia, acondicionamientoParaCoordinacion, condicionesEspeciales, tipoCala, condicionesEjecucion, horariosDeTrabajo, modalidadesDeTrabajo)
 VALUES
-((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '789'), 'Instalacion de conducciones', '2023-01-01', '2023-02-01', 'Toda la via', 'Acondicionamiento1', 'Condiciones1', 'TipoCala1', 'CondicionesEjecucion1', 'Horarios1', 'Modalidades1'),
-((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '1234'), 'Conexion', '2023-02-01', '2023-03-01', 'Toda la via', NULL, NULL, 'TipoCala2', 'CondicionesEjecucion2', 'Horarios2', 'Modalidades2'),
-((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '5678'), 'Conexion', '2023-03-01', '2023-04-01', 'Toda la via', 'Acondicionamiento3', NULL, 'TipoCala3', 'CondicionesEjecucion3', 'Horarios3', 'Modalidades3');
+((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '789'), 'Instalacion de conducciones', '2024-01-01', '2024-02-01', 'Toda la via', 'Acondicionamiento1', 'Condiciones1', 'TipoCala1', 'CondicionesEjecucion1', 'Horarios1', 'Modalidades1'),
+((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '1234'), 'Conexion', '2024-02-01', '2024-03-01', 'Toda la via', NULL, NULL, 'TipoCala2', 'CondicionesEjecucion2', 'Horarios2', 'Modalidades2'),
+((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '5678'), 'Conexion', '2024-03-01', '2024-04-01', 'Toda la via', 'Acondicionamiento3', NULL, 'TipoCala3', 'CondicionesEjecucion3', 'Horarios3', 'Modalidades3');
 
 -- Poblado de la tabla LICENCIA_DECONEXION
 INSERT INTO LICENCIA_DECONEXION (idLicencia, claseConexion, tipoCanalizacion, emplazamiento, dimensiones, otras, rutaCroquisSituacion, rutaPlanoObra, clasePavim, superfPavim)
@@ -382,16 +426,16 @@ VALUES
 -- Poblado de la tabla PROYECTO referente a la LICENCIA_DEOBRA y al PLAN
 INSERT INTO PROYECTO (idLicenciaObra, fechaSolicitud, cifEmpresaExplotadora, motivoObra, instalacionesDeObra, modalidadDeObra, expresionFinalidad, emplazamientoObra, dimensionesObra, caracteristicasObra, rutaPlanoDetallado, restriccionCirculacion, materialesAEmplear, equiposTrabajo, maquinariaAEmplear, fechaFinPrevisibleObra, calendarioEjecucion, presupuesto)
 VALUES
-((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '789'), '2023-01-15', 'J92455278', 'Caida de materiales sobre la via', 'Instalacion electrica', 'ModalidadObra1', 'ExpresionFinalidad1', 'Calle 2 Mayo', '100x100x100', 'CaracteristicasObra1', 'C:\Documents\Proyectos\plano1.pdf', '0', 'Materiales1', 'EquiposTrabajo1', 'Maquinaria1', '2023-11-28', 'Introduccion del calendario', 15000.95),
-((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '1234'), '2023-02-15', 'J25813494', 'Introduccion cable fibra', 'Instalacion de internet', 'ModalidadObra2', 'ExpresionFinalidad2', 'Calle Antillas', '20x20x20', NULL, 'C:\Documents\Proyectos\plano2.pdf', '1', 'Materiales1', 'EquiposTrabajo2', 'Maquinaria2', '2023-12-30', 'Introduccion de otro calendario', 20000),
-((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '5678'), '2023-03-15', 'S3920079E', 'Cambio de tuberias', 'Instalacion agua', 'ModalidadObra3', 'ExpresionFinalidad3', 'Calle Antillas', '10x10x10', 'CaracteristicasObra1', 'C:\Documents\Proyectos\plano3.pdf', '1', 'Materiales1', 'EquiposTrabajo3', 'Maquinaria3', '2023-10-27', 'Introduccion de otro calendario mas', 30500.50);
+((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '789'), '2024-01-15', 'J92455278', 'Caida de materiales sobre la via', 'Instalacion electrica', 'ModalidadObra1', 'ExpresionFinalidad1', 'Calle 2 Mayo', '100x100x100', 'CaracteristicasObra1', 'C:\Documents\Proyectos\plano1.pdf', '0', 'Materiales1', 'EquiposTrabajo1', 'Maquinaria1', '2024-11-28', 'Introduccion del calendario', 15000.95),
+((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '1234'), '2024-02-15', 'J25813494', 'Introduccion cable fibra', 'Instalacion de internet', 'ModalidadObra2', 'ExpresionFinalidad2', 'Calle Antillas', '20x20x20', NULL, 'C:\Documents\Proyectos\plano2.pdf', '1', 'Materiales1', 'EquiposTrabajo2', 'Maquinaria2', '2024-12-30', 'Introduccion de otro calendario', 20000),
+((SELECT idLicencia FROM LICENCIA WHERE idLicencia = '5678'), '2024-03-15', 'S3920079E', 'Cambio de tuberias', 'Instalacion agua', 'ModalidadObra3', 'ExpresionFinalidad3', 'Calle Antillas', '10x10x10', 'CaracteristicasObra1', 'C:\Documents\Proyectos\plano3.pdf', '1', 'Materiales1', 'EquiposTrabajo3', 'Maquinaria3', '2024-10-27', 'Introduccion de otro calendario mas', 30500.50);
 
 
 -- Poblado de la tabla OBRA referente a LICENCIA_DEOCUPACION y LICENCIA_DEOBRA
 INSERT INTO OBRA (idLicenciaOcupacion, idLicenciaObra, fechaInic, fechaFin, tecnicoResponsable, garantia, señalamientoFecha)
 VALUES
-((SELECT idLicenciaOcupacion FROM LICENCIA_DEOCUPACION WHERE idLicenciaOcupacion = '123'), (SELECT idLicenciaObra FROM LICENCIA_DEOBRA WHERE idLicenciaObra = '789'), '2023-02-01', '2023-12-31', 'TecnicoResponsable1', '2023-12-31', 'SeñalamientoFecha1'),
-((SELECT idLicenciaOcupacion FROM LICENCIA_DEOCUPACION WHERE idLicenciaOcupacion = '456'), (SELECT idLicenciaObra FROM LICENCIA_DEOBRA WHERE idLicenciaObra = '1234'), '2023-02-01', '2023-12-31', 'TecnicoResponsable1', '2023-12-31', 'SeñalamientoFecha2');
+((SELECT idLicenciaOcupacion FROM LICENCIA_DEOCUPACION WHERE idLicenciaOcupacion = '123'), (SELECT idLicenciaObra FROM LICENCIA_DEOBRA WHERE idLicenciaObra = '789'), '2024-02-01', '2024-12-31', 'Monolo', '2024-12-31', 'SeñalamientoFecha1'),
+((SELECT idLicenciaOcupacion FROM LICENCIA_DEOCUPACION WHERE idLicenciaOcupacion = '456'), (SELECT idLicenciaObra FROM LICENCIA_DEOBRA WHERE idLicenciaObra = '1234'), '2024-02-01', '2024-12-31', 'NoMonolo', '2024-12-31', 'SeñalamientoFecha2');
 
 -- Poblado de la tabla OBRA_CONDUCCION
 INSERT INTO OBRA_CONDUCCION (idLicenciaOcupacion, idLicenciaObra, caracteristicas, temporal)
@@ -410,8 +454,8 @@ VALUES
 -- Poblado de la tabla DEPOSITO referente a OBRA
 INSERT INTO DEPOSITO (idLicenciaOcupacion, idLicenciaObra, fechaCreacion, peticionario, costeReposicion, dañosYPerjuiciosOcasionados, gastosPorDesviarTrafico, plazoGarantia)
 VALUES
-((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = '123'), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaOcupacion = '123'), '2023-02-01', 'Peticionaria1', 5000.0, 'Daños y Perjuicios1', NULL , '2024-02-01'),
-((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = '456'), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaOcupacion = '456'),'2023-01-01', 'Peticionaria2', 6000.0, 'Daños y Perjuicios2', 500.0, '2024-02-01');
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = '123'), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaOcupacion = '123'), '2024-02-01', 'Peticionaria1', 5000.0, 'Daños y Perjuicios1', NULL , '2024-02-01'),
+((SELECT idLicenciaOcupacion FROM OBRA WHERE idLicenciaOcupacion = '456'), (SELECT idLicenciaObra FROM OBRA WHERE idLicenciaOcupacion = '456'),'2024-01-01', 'Peticionaria2', 6000.0, 'Daños y Perjuicios2', 500.0, '2024-02-01');
 
 -- Poblado de la tabla INSPECCION referente a OBRA
 INSERT INTO INSPECCION (idLicenciaOcupacion, idLicenciaObra, comprobacionEspacio, comprobacionTiempo, comprobacionConformidad, comprobacionConsInstalac, comprobacionFormaEjec, comprobacionReposicElem)
@@ -484,3 +528,72 @@ VALUES
 ((SELECT ubicacion FROM MEDIO WHERE ubicacion = 'Plaza1-Plaza2'), 'Multitubular', 2.0, '20x20x20');
 
 
+------------------POSIBLES CONSULTAS ------------------------
+
+--Todas las obras para las que ‘Monolo’ sea el técnico responsable
+SELECT O.idLicenciaOcupacion, O.idLicenciaObra
+FROM obra O
+WHERE O.tecnicoResponsable = 'Monolo';
+
+--Obras que tengan alguna Multa
+SELECT DISTINCT O.idLicenciaOcupacion, O.idLicenciaObra
+FROM obra O, multa M
+WHERE M.idLicenciaObra = O.idLicenciaObra AND
+M.idLicenciaOcupacion = O.idLicenciaOcupacion ;
+
+
+--Obras que no tengan ninguna Multa
+SELECT DISTINCT O.idLicenciaObra, O.idLicenciaOcupacion
+FROM obra O, multa M
+WHERE NOT EXISTS (SELECT M.idLicenciaObra, M.idLicenciaOcupacion
+		      FROM multa M
+      WHERE M.idLicenciaObra=O.idLicenciaObra AND
+      M.idLicenciaOcupacion=O.idLicenciaOcupacion);
+
+--Proyectos  de una empresa con un CIF que no se hayan quedado en solo proyectos (que haya sido aceptado y llegado a conceder una licencia de obra para ejecutar ese proyecto)
+SELECT P.idLicenciaObra, P.fechaSolicitud
+FROM proyecto P
+WHERE P.cifEmpresaExplotadora='J92455278' AND 
+NOT EXISTS (SELECT P2.fechaSolicitud
+		      FROM proyecto P2
+		      WHERE P2.idLicenciaObra=P.idLicenciaObra AND
+				P2.fechaSolicitud>P.fechaSolicitud);
+
+
+--Instalaciones afectadas por Obra_medio. ‘estaLicienciaObra’ ‘estaLicenciaOcupacion’
+SELECT DISTINCT I.idCodConducciones
+FROM instalacion I, relacion R, medio M
+WHERE M.idlicenciaObra='456' AND
+M.idLicenciaOcupacion='123' AND 
+R.idMedio=M.ubicacion AND 
+R.iteracionMedio=M.iteracion AND 
+I.idCodConducciones=R.idInstalacion;
+
+--Licencias de obras aprobadas de una empresa. ‘esteCifEmpresa’
+SELECT DISTINCT L.idLicenciaObra
+FROM licencia_deobra L, proyecto Pr
+WHERE Pr.cifEmpresaExplotadora = 'J92455278' AND L.idLicenciaObra=Pr.idLicenciaObra;
+
+--A partir de una ubicación de una conducción. Obtener el depósito que corresponde por si esa conducción fuera defectuosa y el técnico responsable de la obra
+SELECT O.tecnicoResponsable, D.fechaCreacion,D.idLicenciaOcupacion, D.idLicenciaObra
+FROM (SELECT MAX(C.iteracion) AS currentIteration
+FROM conduccion C
+WHERE C.ubicacion = 'Plaza1-Plaza2'
+GROUP BY C.ubicacion
+) Ttemp, deposito D, conduccion C, obra O
+WHERE C.ubicacion= 'Plaza1-Plaza2' AND C.iteracion=Ttemp.currentIteration AND
+O.idLicenciaObra = C.idLicenciaObra AND 
+O.idLicenciaOcupacion = C.idLicenciaOcupacion AND
+D.idLicenciaObra = C.idLicenciaObra AND 
+D.idLicenciaOcupacion = C.idLicenciaOcupacion AND
+	NOT EXISTS (SELECT D2.fechaCreacion
+      FROM deposito D2
+      WHERE D.idLicenciaObra=D2.idLicenciaObra AND
+     D.idLicenciaOcupacion=D2.idLicenciaOcupacion AND      D.fechaCreacion<D2.fechaCreacion);
+
+--Devuelve todas las conducciones actuales (con la ultima iteracion)
+SELECT C.ubicacion, C.iteracion 
+FROM conduccion C
+WHERE C.iteracion >= ALL (SELECT C2.iteracion
+			     FROM conduccion C2
+			    WHERE C2.ubicacion=C.ubicacion);
